@@ -4,8 +4,9 @@ from enum import Enum
 class Role(Enum):
     ADMIN = "ADMIN"
     HCP = "HCP"
-    CORE_USER = "CORE_USER"
+    PRIMARY_CAREGIVER = "PRIMARY_CAREGIVER"
     FAMILY_MEMBER = "FAMILY_MEMBER"
+    PATIENT = "PATIENT"
 
     @staticmethod
     def from_string(role_str: str) -> "Role":
