@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "agenda-service"
+version = "0.1.0"
+description = "An API meant as a sort of 'facade' for the google agenda."
+authors = ["tayamEJ <Tayam0nline@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
