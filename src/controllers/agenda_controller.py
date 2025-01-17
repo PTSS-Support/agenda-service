@@ -20,7 +20,7 @@ agenda_router = APIRouter(tags=["agenda-service"])
         403: {"description": "Insufficient permissions to access this resource"}
     }
 )
-@authentication([Role.CORE_USER, Role.FAMILY_MEMBER])
+@authentication([Role.PATIENT, Role.FAMILY_MEMBER, Role.PRIMARY_CAREGIVER])
 async def list_agenda_items(
         request: Request,
         params: AgendaQueryParams = Depends(),
@@ -30,4 +30,4 @@ async def list_agenda_items(
     if not user_context or not user_context.group_id:
         raise HTTPException(status_code=400, detail="Group ID is required")
 
-    return await facade.list_agenda_items(user_context.group_id, AgendaQueryParams.start_date, AgendaQueryParams.end_date)
+    return await facade.list_agenda_items(user_context.group_id, params.start_date, params.end_date)

@@ -12,7 +12,6 @@ class UserContext:
     user_id: UUID
     group_id: Optional[UUID]
     roles: Set[Role]
-    has_pin: bool
 
 def get_user_context() -> Optional[UserContext]:
     return user_context_var.get()

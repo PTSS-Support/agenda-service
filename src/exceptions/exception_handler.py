@@ -1,9 +1,25 @@
+import json
+import logging
+import traceback
+from typing import Dict, Any
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from starlette.responses import JSONResponse
 
 from src.exceptions.api_exception import APIException
 from src.exceptions.error_codes import ErrorCode
+
+logger = logging.getLogger(__name__)
+
+def _log_request_details(request: Request) -> Dict[str, Any]:
+    """Helper function to collect common request details for logging"""
+    return {
+        "method": request.method,
+        "url": str(request.url),
+        "client_host": request.client.host if request.client else "unknown",
+        "headers": dict(request.headers),
+    }
 
 
 def configure_exception_handlers(app: FastAPI):
@@ -12,6 +28,8 @@ def configure_exception_handlers(app: FastAPI):
         """
         Handles FastAPI's RequestValidationError and formats it according to our API standard
         """
+        request_details = _log_request_details(request)
+
         # For query parameters, body, etc.
         model = None
         for error in exc.errors():
@@ -44,9 +62,30 @@ def configure_exception_handlers(app: FastAPI):
 
     @app.exception_handler(APIException)
     async def api_exception_handler(request: Request, exc: APIException):
-        """
-        Handles our custom APIException
-        """
+        request_details = _log_request_details(request)
+
+        # Log based on the severity of the error
+        if exc.status_code >= 500:
+            logger.error(
+                "API error occurred",
+                extra={
+                    "request": request_details,
+                    "error_code": exc.detail.get("code"),
+                    "error_message": exc.detail.get("message"),
+                    "status_code": exc.status_code,
+                    "traceback": traceback.format_exc()
+                }
+            )
+        else:
+            logger.warning(
+                "API error occurred",
+                extra={
+                    "request": request_details,
+                    "error_code": exc.detail.get("code"),
+                    "error_message": exc.detail.get("message"),
+                    "status_code": exc.status_code
+                }
+            )
         return JSONResponse(
             status_code=exc.status_code,
             content=exc.detail
@@ -55,12 +94,29 @@ def configure_exception_handlers(app: FastAPI):
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception):
         """
-        Handles any unhandled exceptions to prevent exposing internal errors, if you get this, it might be a different status code
+        Handles any unhandled exceptions to prevent exposing internal errors
         """
+        request_details = _log_request_details(request)
+        error_details = {
+            "request": request_details,
+            "error_type": exc.__class__.__name__,
+            "error_message": str(exc),
+            "traceback": traceback.format_exc()
+        }
+
+        # Just add a distinctive marker to make it clear our handler caught it
+        logger.error(
+            "=== Exception Handler Caught: {} ===".format(exc.__class__.__name__),
+            extra=error_details
+        )
+
+        logger.error(f"Error message: {str(exc)}")
+        logger.debug(f"Full traceback:\n{traceback.format_exc()}")
+
         return JSONResponse(
             status_code=500,
             content={
-                "code": "INTERNAL_ERROR",
+                "code": ErrorCode.INTERNAL_SERVER_ERROR.code,
                 "message": "An unexpected error occurred"
             }
         )
