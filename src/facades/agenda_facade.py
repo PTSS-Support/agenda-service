@@ -1,29 +1,17 @@
-from datetime import datetime
-from typing import Optional, List
-from uuid import UUID
-
-from src.responses.agenda_response import AgendaResponse, ItemType, TimeSlot
+from src.repositories.agenda_repository import AgendaRepository
+from src.services.agenda_service import AgendaService
 
 
 class AgendaFacade:
-    async def list_agenda_items(
-        self,
-        group_id: UUID,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
-    ) -> List[AgendaResponse]:
-        return [
-            AgendaResponse(
-                id="test-id",
-                summary="Everything went fine",
-                description="Test description",
-                location="Test location",
-                itemType=ItemType.EVENT,
-                created=datetime.now(),
-                updated=datetime.now(),
-                timeSlot=TimeSlot(
-                    start=datetime.now(),
-                    end=datetime.now()
-                )
-            )
-        ]
+    def __init__(self):
+        self.repository = AgendaRepository()
+        self.service = AgendaService(self.repository)
+
+    async def initialize(self):
+        await self.repository.ensure_table_exists()
+
+    async def create_agenda_item(self, *args, **kwargs):
+        return await self.service.create_agenda_item(*args, **kwargs)
+
+    async def list_agenda_items(self, *args, **kwargs):
+        return await self.service.list_agenda_items(*args, **kwargs)
