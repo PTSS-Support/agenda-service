@@ -19,4 +19,8 @@ class Settings(BaseSettings):
     KEYCLOAK_PUBLIC_KEY: Optional[str] = os.getenv("KEYCLOAK_PUBLIC_KEY")
     JWT_VALIDATION_ENABLED: bool = os.getenv("JWT_VALIDATION_ENABLED", True)
 
+    # Add these new settings
+    AZURE_STORAGE_CONNECTION_STRING: str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    AZURE_STORAGE_TABLE_NAME: str = os.getenv("AZURE_STORAGE_TABLE_NAME", "agendaitems")
+
 settings = Settings()
