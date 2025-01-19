@@ -23,8 +23,27 @@ class AgendaRepository:
             logger.error(f"Error checking or creating table: {e}")
             raise
 
+    async def query_entities(self, filter_query: str):
+        return self.table_client.query_entities(filter_query)
+
     async def create_entity(self, entity: dict):
         return await self.table_client.create_entity(entity=entity)
 
-    async def query_entities(self, filter_query: str):
-        return self.table_client.query_entities(filter_query)
+    async def update_entity(self, entity: dict):
+        try:
+            await self.table_client.update_entity(mode='replace', entity=entity)
+        except Exception as e:
+            logger.error(f"Error updating entity: {e}")
+            raise
+
+    async def delete_entity(self, partition_key: str, row_key: str):
+        try:
+            logger.info(f"Attempting to delete entity with PartitionKey={partition_key}, RowKey={row_key}")
+            await self.table_client.delete_entity(
+                partition_key=str(partition_key),
+                row_key=str(row_key)
+            )
+            logger.info(f"Successfully deleted entity with PartitionKey={partition_key}, RowKey={row_key}")
+        except Exception as e:
+            logger.error(f"Error deleting entity with PartitionKey={partition_key}, RowKey={row_key}: {e}")
+            raise
