@@ -2,16 +2,17 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Create and set a non-root user
+# Create non-root user
 RUN useradd -m -u 1000 python
-RUN chown -R python:python /app
 
 # Install poetry
 RUN pip install poetry
 
-# Copy the entire project first
+# Copy files and set ownership
 COPY . .
+RUN chown -R python:python /app
 
+# Switch to non-root user
 USER python
 
 # Configure poetry to not create a virtual environment
