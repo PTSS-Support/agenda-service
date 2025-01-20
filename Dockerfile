@@ -2,22 +2,21 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Create non-root user
-RUN useradd -m -u 1000 python
+# Install poetry
+RUN pip install poetry
 
-# Install dependencies first
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-# Copy application code
+# Copy the entire project
 COPY . .
-RUN chown -R python:python /app
 
-# Switch to non-root user
-USER python
+# Disable virtualenv creation (this is crucial)
+ENV POETRY_VIRTUALENVS_CREATE=false
+
+# Install dependencies
+RUN poetry install --only main --no-interaction --no-ansi
 
 # Expose the port the app runs on
 EXPOSE 8000
 
 # Command to run the application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Note the module path change to reflect the src directory
+CMD ["poetry", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
