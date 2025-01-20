@@ -17,6 +17,21 @@ resources:
     cpu: 30m
     memory: 128Mi
 
+volumeMounts:
+  - name: config-volume
+    mountPath: /app/config
+    readOnly: true
+  - name: data-volume
+    mountPath: /app/data
+
+volumes:
+  - name: config-volume
+    configMap:
+      name: {{ .Release.Name }}-config
+  - name: data-volume
+    persistentVolumeClaim:
+      claimName: {{ .Release.Name }}-data
+
 ports:
   - name: http
     containerPort: 8000
