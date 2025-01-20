@@ -1,0 +1,51 @@
+image:
+  registry: ghcr.io
+  repository: ""  # Will be set from workflow
+  tag: latest    # Will be set from workflow
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 150m
+    memory: 256Mi
+  requests:
+    cpu: 30m
+    memory: 128Mi
+
+ports:
+  - name: http
+    containerPort: 8000
+    protocol: TCP
+
+route:
+  enabled: true
+  host: ""  # Will be set from environment variable
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 20
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+  successThreshold: 1
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 25
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+  successThreshold: 1
