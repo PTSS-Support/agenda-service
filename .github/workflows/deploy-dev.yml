@@ -1,0 +1,122 @@
+name: 🚀 Deploy to Development
+
+on:
+  push:
+    branches: [ development ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag (optional)'
+        required: false
+        default: 'latest'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.repo_name.outputs.artifact_name }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set Repository Name
+        id: repo_name
+        run: |
+          echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "artifact_name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]' | tr '/' '-')" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          poetry --version
+
+      - name: Install Dependencies
+        run: poetry install
+
+      - name: Run Tests
+        run: poetry run pytest
+
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ steps.repo_name.outputs.name }}:latest .
+
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.generate_tag.outputs.version }}
+      repo_name: ${{ steps.repo_name.outputs.name }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set Repository Name
+        id: repo_name
+        run: |
+          echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Generate Version Tag
+        id: generate_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.tag }}" != "latest" ]; then
+            echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$(date +'%Y%m%d')-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PACKAGE_PAT }}
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ghcr.io/${{ steps.repo_name.outputs.name }}:${{ steps.generate_tag.outputs.version }} .
+          docker push ghcr.io/${{ steps.repo_name.outputs.name }}:${{ steps.generate_tag.outputs.version }}
+
+  deploy:
+    needs: package
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set App Name
+        id: app_name
+        run: |
+          echo "name=$(echo ${{ github.event.repository.name }} | tr '[:upper:]' '[:lower:]' | tr '_' '-')" >> $GITHUB_OUTPUT
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz
+          tar -xvf openshift-client-linux.tar.gz -C /usr/local/bin
+          chmod +x /usr/local/bin/oc
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.0
+
+      - name: Login to OpenShift
+        run: |
+          oc login --token=${{ secrets.OSC_DEV_TOKEN }} --server=${{ secrets.OSC_SERVER }}
+
+      - name: Deploy to OpenShift Dev
+        run: |
+          helm upgrade --install ${{ steps.app_name.outputs.name }} ./helm \
+            --namespace ${{ vars.OSC_DEV_PROJECT }} \
+            --set image.registry=ghcr.io \
+            --set image.repository=${{ needs.package.outputs.repo_name }} \
+            --set image.tag=${{ needs.package.outputs.image_tag }} \
+            --set route.host=${{ steps.app_name.outputs.name }}-dev.${{ vars.APPS_DOMAIN }}
