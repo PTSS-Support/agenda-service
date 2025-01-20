@@ -1,0 +1,4 @@
+cffi==1.17.1 ; python_version >= "3.11" and python_version < "4.0" and platform_python_implementation != "PyPy"
+cryptography==44.0.0 ; python_version >= "3.11" and python_version < "4.0"
+pycparser==2.22 ; python_version >= "3.11" and python_version < "4.0" and platform_python_implementation != "PyPy"
+pyjwt==2.10.1 ; python_version >= "3.11" and python_version < "4.0"
