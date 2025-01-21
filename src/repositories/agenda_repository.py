@@ -1,3 +1,5 @@
+import asyncio
+
 from azure.data.tables import TableServiceClient
 from azure.data.tables.aio import TableClient
 from src.settings import settings
@@ -14,14 +16,22 @@ class AgendaRepository:
             settings.AZURE_STORAGE_CONNECTION_STRING,
             self.table_name
         )
-        self.ensure_table_exists()
+        asyncio.run(self.ensure_table_exists())
 
     async def ensure_table_exists(self):
         try:
-            self.table_service_client.create_table_if_not_exists(self.table_name)
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, self._create_table_if_not_exists)
             logger.info(f"Table {self.table_name} ensured.")
         except Exception as e:
             logger.error(f"Error checking or creating table: {e}")
+            raise
+
+    def _create_table_if_not_exists(self):
+        try:
+            self.table_service_client.create_table_if_not_exists(self.table_name)
+        except Exception as e:
+            logger.error(f"Error creating table: {e}")
             raise
 
     async def query_entities(self, filter_query: str):
