@@ -23,8 +23,22 @@ def configure_logging():
     logging.getLogger("uvicorn.access").setLevel(logging.INFO)
     logging.getLogger(__name__).setLevel(logging.DEBUG)
 
-# Add this before creating the FastAPI app
 configure_logging()
+
+class ExcludePathFilter(logging.Filter):
+    def __init__(self, excluded_paths):
+        super().__init__()
+        self.excluded_paths = excluded_paths
+
+    def filter(self, record):
+        # Check if the log message contains any excluded path
+        message = record.getMessage()
+        return not any(path in message for path in self.excluded_paths)
+
+# Apply the filter to the access logger
+excluded_paths = ["/metrics", "/manage/health"]
+logging.getLogger("uvicorn.access").addFilter(ExcludePathFilter(excluded_paths))
+
 
 app = FastAPI(
     title=settings.SERVICE_TITLE,
