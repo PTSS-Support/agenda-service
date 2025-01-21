@@ -24,7 +24,7 @@ This service manages agenda items for different groups, using Azure Table Storag
 3. Create a `.env` file in the root directory with the following variables:
    ```env
    HOST=0.0.0.0
-   PORT=8000
+   PORT=8080
    LOG_LEVEL=info
    KEYCLOAK_PUBLIC_KEY=your_public_key_here
    JWT_VALIDATION_ENABLED=true
