@@ -14,7 +14,7 @@ class AgendaRepository:
             settings.AZURE_STORAGE_CONNECTION_STRING,
             self.table_name
         )
-        self.ensure_table_exists(self)
+        self.ensure_table_exists()
 
     async def ensure_table_exists(self):
         try:
