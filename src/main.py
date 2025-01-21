@@ -23,7 +23,6 @@ def configure_logging():
     logging.getLogger("uvicorn.access").setLevel(logging.INFO)
     logging.getLogger(__name__).setLevel(logging.DEBUG)
 
-
 # Add this before creating the FastAPI app
 configure_logging()
 
@@ -32,11 +31,12 @@ app = FastAPI(
     description=settings.SERVICE_DESCRIPTION,
     version=settings.SERVICE_VERSION,
 )
+
 app.add_middleware(AuthenticationMiddleware)
 
 Instrumentator().instrument(app).expose(
     app=app,
-    endpoint="/prometheus",
+    endpoint="/metrics",
     include_in_schema=False
 )
 
