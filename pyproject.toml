@@ -16,6 +16,7 @@ prometheus-fastapi-instrumentator = "^6.1.0"
 pydantic = "^2.10.0"
 pydantic-settings = "^2.2.1"
 starlette = "^0.37.2"
+azure-data-tables = "^12.6.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
